@@ -45,7 +45,7 @@ from urllib.parse import quote_plus
 from util.file_properties import get_name, get_hash, get_media_file_size
 import logging
 logger = logging.getLogger(__name__)
-logging.getLogger("pyrogram").setLevel(logging.WARNING)
+logger.setLevel(logging.ERROR)
 
 req_channel = REQ_CHANNEL
 BUTTONS = {}
@@ -459,19 +459,6 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     pass
             else:
                 await query.answer("That's not for you sona!", show_alert=True)
-    
-    elif "|" in query.data:
-        try:
-            await youtube_dl_call_back(client, query)
-        except Exception as e:
-            logger.error(f"An error occurred youtube_dl_call_back: {e}")
-
-    elif "=" in query.data:
-        try:
-            await ddl_call_back(client, query)
-        except Exception as e:
-            logger.error(f"AN error occurred for ddl_call_back: {e}")
-
     elif "groupcb" in query.data:
         await query.answer()
 
@@ -818,7 +805,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
     elif query.data == "showThumbnail":
         thumbnail = await db.get_lazy_thumbnail(query.from_user.id)
         if not thumbnail:
-            await query.answer("Hey baby, You didn't set any custom thumbnail for url downloading 🥱!", show_alert=True)
+            await query.answer("You didn't set any custom thumbnail!", show_alert=True)
         else:
             await query.answer()
             await client.send_photo(query.message.chat.id, thumbnail, "Custom Thumbnail",
@@ -829,17 +816,12 @@ async def cb_handler(client: Client, query: CallbackQuery):
 
     elif query.data == "deleteurlthumbnail":
         await db.set_lazy_thumbnail(query.from_user.id, None)
-        await query.answer("**Okay baby, I deleted your custom thumbnail for url downloading. Now I will apply default thumbnail. ☑**", show_alert=True)
-        await query.message.delete(True)
-    elif query.data == "deleteThumbnail":
-        await db.set_thumbnail(query.from_user.id, None)
-        await query.answer("**Okay sweetie, I deleted your custom thumbnail for direct renaming. Now I will apply default thumbnail. ✅️**", show_alert=True)
+        await query.answer("Okay, I deleted your custom thumbnail. Now I will apply default thumbnail.", show_alert=True)
         await query.message.delete(True)
 
     elif query.data == "setThumbnail":
         button = InlineKeyboardMarkup(
             [[
-                InlineKeyboardButton('Back', callback_data='openSettings'),
                 InlineKeyboardButton('Close', callback_data='close')
             ]]
         )
@@ -1292,6 +1274,14 @@ async def cb_handler(client: Client, query: CallbackQuery):
             reply_markup = InlineKeyboardMarkup(buttons)
             await query.message.edit_reply_markup(reply_markup)
     await query.answer('♥️ Thank You LazyDeveloper ♥️')
+
+@Client.on_callback_query()
+async def lazyurl_cb(bot , update):
+    if "|" in update.data:
+        await youtube_dl_call_back(bot, update)
+    elif "=" in update.data:
+        await ddl_call_back(bot, update)
+
 
 
 async def auto_filter(client, msg, spoll=False):
